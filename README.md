@@ -1,3 +1,9 @@
+# Refactoring
+
+This examples contains a wrong abstraction. Somebody applied the DRY principle to the code which yields in a wrong abstraction. Can you figure it out? Then remove he abstraction and refactor by applying new abstractions.
+
+
+
 TestRail API Binding for Java
 -----------------------------
  
