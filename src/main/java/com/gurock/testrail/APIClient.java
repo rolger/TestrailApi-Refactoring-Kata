@@ -23,50 +23,28 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 public class APIClient {
-	private String m_user;
-	private String m_password;
-	private String m_url;
+	private String user;
+	private String password;
+	private String testrailUrl;
 
-	public APIClient(String base_url) {
-		if (!base_url.endsWith("/")) {
-			base_url += "/";
-		}
-
-		this.m_url = base_url + "index.php?/api/v2/";
-	}
-
-	/**
-	 * Get/Set User
-	 *
-	 * Returns/sets the user used for authenticating the API requests.
-	 */
-	public String getUser() {
-		return this.m_user;
+	public APIClient(String baseUrl) {
+		this.testrailUrl = baseUrl + "/index.php?/api/v2/";
 	}
 
 	public void setUser(String user) {
-		this.m_user = user;
-	}
-
-	/**
-	 * Get/Set Password
-	 *
-	 * Returns/sets the password used for authenticating the API requests.
-	 */
-	public String getPassword() {
-		return this.m_password;
+		this.user = user;
 	}
 
 	public void setPassword(String password) {
-		this.m_password = password;
+		this.password = password;
 	}
 
 	/**
@@ -86,11 +64,11 @@ public class APIClient {
 	 * 
 	 * If 'get_attachment/:attachment_id', returns a String
 	 */
-	public Object sendGet(String uri, String data) throws MalformedURLException, IOException, APIException {
+	public Object sendGet(String uri, String data) throws IOException {
 		return this.sendRequest("GET", uri, data);
 	}
 
-	public Object sendGet(String uri) throws MalformedURLException, IOException, APIException {
+	public Object sendGet(String uri) throws IOException {
 		return this.sendRequest("GET", uri, null);
 	}
 
@@ -111,13 +89,12 @@ public class APIClient {
 	 * cases, this returns a JSONObject instance which is basically the same as
 	 * java.util.Map.
 	 */
-	public Object sendPost(String uri, Object data) throws MalformedURLException, IOException, APIException {
+	public Object sendPost(String uri, Object data) throws IOException {
 		return this.sendRequest("POST", uri, data);
 	}
 
-	private Object sendRequest(String method, String uri, Object data)
-			throws MalformedURLException, IOException, APIException {
-		URL url = new URL(this.m_url + uri);
+	private Object sendRequest(String method, String uri, Object data) throws IOException {
+		URL url = new URL(this.testrailUrl + uri);
 		// Create the connection object and set the required HTTP method
 		// (GET/POST) and headers (content type and basic auth).
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -125,7 +102,7 @@ public class APIClient {
 		String auth = "";
 
 		try {
-			auth = new String(Base64.getEncoder().encode((this.m_user + ":" + this.m_password).getBytes()));
+			auth = new String(Base64.getEncoder().encode((this.user + ":" + this.password).getBytes()));
 		} catch (IllegalArgumentException e) {
 			// Not thrown
 		}
@@ -176,7 +153,7 @@ public class APIClient {
 				} else // Not an attachment
 				{
 					conn.addRequestProperty("Content-Type", "application/json");
-					byte[] block = JSONValue.toJSONString(data).getBytes("UTF-8");
+					byte[] block = JSONValue.toJSONString(data).getBytes(StandardCharsets.UTF_8);
 
 					conn.setDoOutput(true);
 					OutputStream ostream = conn.getOutputStream();
@@ -218,14 +195,14 @@ public class APIClient {
 
 			outputStream.close();
 			istream.close();
-			return (String) data;
+			return data;
 		}
 
 		// Not an attachment received
 		// Read the response body, if any, and deserialize it from JSON.
 		String text = "";
 		if (istream != null) {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(istream, "UTF-8"));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8));
 
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -248,7 +225,7 @@ public class APIClient {
 		// by TestRail).
 		if (status != 200) {
 			String error = "No additional error message received";
-			if (result != null && result instanceof JSONObject) {
+			if (result instanceof JSONObject) {
 				JSONObject obj = (JSONObject) result;
 				if (obj.containsKey("error")) {
 					error = '"' + (String) obj.get("error") + '"';
